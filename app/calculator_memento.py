@@ -12,21 +12,22 @@ from app.calculation import Calculation
 @dataclass
 class CalculatorMemento:
     """
-    Stores calculator state for undo/redo functionality.
-
-    The Memento pattern allows the Calculator to save its current state (history)
-    so that it can be restored later. This enables features like undo and redo.
+    This class implements the memento design pattern to store a snapshot of the 
+    calculator state for undo/redo functionality.
     """
 
-    history: List[Calculation]  # List of Calculation instances representing the calculator's history
-    timestamp: datetime.datetime = field(default_factory=datetime.datetime.now)  # Time when the memento was created
+    history: List[Calculation] 
+    timestamp: datetime.datetime = field(default_factory=datetime.datetime.now)  
+    """History captures a snapshot of the calculations at the moment of creation.
+        Timestamp automatically records the default state at creation.
+    """
 
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert memento to dictionary.
 
         This method serializes the memento's state into a dictionary format,
-        making it easy to store or transmit.
+        making it easy to store or transmit as JSON or CSV.
 
         Returns:
             Dict[str, Any]: A dictionary containing the serialized state of the memento.
@@ -41,8 +42,8 @@ class CalculatorMemento:
         """
         Create memento from dictionary.
 
-        This class method deserializes a dictionary to recreate a CalculatorMemento
-        instance, restoring the calculator's history and timestamp.
+        This class method deserializes a dictionary to rebuilds an
+        instance that restores the calculator's history and timestamp.
 
         Args:
             data (Dict[str, Any]): Dictionary containing serialized memento data.

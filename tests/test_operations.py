@@ -14,7 +14,6 @@ from app.operations import (
     OperationFactory,
 )
 
-
 class TestOperation:
     """Test base Operation class functionality."""
 

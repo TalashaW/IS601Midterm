@@ -62,11 +62,20 @@ def test_add_observer(calculator):
     calculator.add_observer(observer)
     assert observer in calculator.observers
 
+    autosave_observer = AutoSaveObserver(calculator)
+    calculator.add_observer(autosave_observer)
+    assert autosave_observer in calculator.observers
+
 def test_remove_observer(calculator):
     observer = LoggingObserver()
     calculator.add_observer(observer)
     calculator.remove_observer(observer)
     assert observer not in calculator.observers
+
+    autosave_observer = AutoSaveObserver(calculator)
+    calculator.add_observer(autosave_observer)
+    calculator.remove_observer(autosave_observer)
+    assert autosave_observer not in calculator.observers
 
 # Test Setting Operations
 
@@ -178,3 +187,154 @@ def test_calculator_repl_help(mock_print, mock_input):
 def test_calculator_repl_addition(mock_print, mock_input):
     calculator_repl()
     mock_print.assert_any_call("\nResult: 5")
+
+    # Test show_history
+def test_show_history(calculator):
+    operation = OperationFactory.create_operation('add')
+    calculator.set_operation(operation)
+    calculator.perform_operation(2, 3)
+    history = calculator.show_history()
+    assert len(history) == 1
+    assert "2" in history[0] and "3" in history[0]
+
+def test_show_history_empty(calculator):
+    history = calculator.show_history()
+    assert history == []
+
+# Test get_history_dataframe
+def test_get_history_dataframe(calculator):
+    operation = OperationFactory.create_operation('add')
+    calculator.set_operation(operation)
+    calculator.perform_operation(2, 3)
+    df = calculator.get_history_dataframe()
+    assert len(df) == 1
+    assert df['operation'][0] == 'Addition'
+
+def test_get_history_dataframe_empty(calculator):
+    df = calculator.get_history_dataframe()
+    assert len(df) == 0
+
+# Test undo/redo edge cases
+def test_undo_empty_stack(calculator):
+    result = calculator.undo()
+    assert result is False
+
+def test_redo_empty_stack(calculator):
+    result = calculator.redo()
+    assert result is False
+
+def test_multiple_undo_redo(calculator):
+    operation = OperationFactory.create_operation('add')
+    calculator.set_operation(operation)
+    calculator.perform_operation(2, 3)
+    calculator.perform_operation(5, 5)
+    
+    # Undo twice
+    assert calculator.undo() is True
+    assert calculator.undo() is True
+    assert len(calculator.history) == 0
+    
+    # Redo twice
+    assert calculator.redo() is True
+    assert calculator.redo() is True
+    assert len(calculator.history) == 2
+
+# Test different operations
+def test_subtraction(calculator):
+    operation = OperationFactory.create_operation('subtract')
+    calculator.set_operation(operation)
+    result = calculator.perform_operation(10, 3)
+    assert result == Decimal('7')
+
+def test_multiplication(calculator):
+    operation = OperationFactory.create_operation('multiply')
+    calculator.set_operation(operation)
+    result = calculator.perform_operation(4, 5)
+    assert result == Decimal('20')
+
+def test_division(calculator):
+    operation = OperationFactory.create_operation('divide')
+    calculator.set_operation(operation)
+    result = calculator.perform_operation(10, 2)
+    assert result == Decimal('5')
+
+def test_division_by_zero(calculator):
+    operation = OperationFactory.create_operation('divide')
+    calculator.set_operation(operation)
+    with pytest.raises(ValidationError):
+        calculator.perform_operation(10, 0)
+
+# Test notify_observers
+def test_notify_observers(calculator):
+    observer = Mock(spec=LoggingObserver)
+    calculator.add_observer(observer)
+    operation = OperationFactory.create_operation('add')
+    calculator.set_operation(operation)
+    calculator.perform_operation(2, 3)
+    
+    # Verify observer was notified
+    observer.update.assert_called_once()
+
+# Test history size limit
+def test_history_max_size(calculator):
+    # Set a small max size for testing
+    calculator.config.max_history_size = 3
+    operation = OperationFactory.create_operation('add')
+    calculator.set_operation(operation)
+    
+    # Add more than max
+    for i in range(5):
+        calculator.perform_operation(i, i)
+    
+    # Should only keep last 3
+    assert len(calculator.history) <= 3
+
+# Test save_history with empty history
+@patch('app.calculator.pd.DataFrame.to_csv')
+def test_save_history_empty(mock_to_csv, calculator):
+    calculator.save_history()
+    mock_to_csv.assert_called_once()
+
+# Test load_history with non-existent file
+@patch('app.calculator.Path.exists', return_value=False)
+def test_load_history_no_file(mock_exists, calculator):
+    calculator.load_history()
+    assert calculator.history == []
+
+# Test load_history with empty CSV
+@patch('app.calculator.pd.read_csv')
+@patch('app.calculator.Path.exists', return_value=True)
+def test_load_history_empty_csv(mock_exists, mock_read_csv, calculator):
+    mock_read_csv.return_value = pd.DataFrame()
+    calculator.load_history()
+    # Should handle empty file gracefully
+
+# Test validation with different invalid inputs
+def test_perform_operation_invalid_first_operand(calculator):
+    calculator.set_operation(OperationFactory.create_operation('add'))
+    with pytest.raises(ValidationError):
+        calculator.perform_operation('abc', 3)
+
+def test_perform_operation_invalid_second_operand(calculator):
+    calculator.set_operation(OperationFactory.create_operation('add'))
+    with pytest.raises(ValidationError):
+        calculator.perform_operation(3, 'xyz')
+
+def test_perform_operation_both_invalid(calculator):
+    calculator.set_operation(OperationFactory.create_operation('add'))
+    with pytest.raises(ValidationError):
+        calculator.perform_operation('abc', 'xyz')
+
+# Test redo stack clears after new operation
+def test_redo_stack_clears_on_new_operation(calculator):
+    operation = OperationFactory.create_operation('add')
+    calculator.set_operation(operation)
+    calculator.perform_operation(2, 3)
+    calculator.undo()
+    
+    # Redo stack should have something
+    assert len(calculator.redo_stack) > 0
+    
+    # New operation should clear redo stack
+    calculator.perform_operation(5, 5)
+    assert len(calculator.redo_stack) == 0
