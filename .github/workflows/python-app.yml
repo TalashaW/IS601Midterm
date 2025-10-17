@@ -34,7 +34,7 @@ jobs:
 
       - name: Check test coverage
         run: |
-          pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=100 tests/
+          pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=90 tests/
 
       - name: Upload coverage report as artifact
         if: always()

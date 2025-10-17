@@ -346,7 +346,10 @@ class Calculator:
             for calc in self.history
         ]
 
-    def clear_history(self) -> None:
+    def clear_history(self) -> bool:
+
+        if not self.history:
+            return False
         """
         Clear calculation history.
 
@@ -356,6 +359,7 @@ class Calculator:
         self.undo_stack.clear()
         self.redo_stack.clear()
         logging.info("History cleared")
+        return True
 
     def undo(self) -> bool:
         """

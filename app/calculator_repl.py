@@ -118,8 +118,10 @@ def calculator_repl():
                     continue
 
                 if command == 'clear':
-                    calc.clear_history()
-                    print("History cleared")
+                    if calc.clear_history():
+                        print("History cleared")
+                    else:
+                        print("No history to clear")
                     continue
 
                 if command == 'undo':
