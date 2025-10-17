@@ -1,3 +1,9 @@
+# TaLasha Winston
+# Python for Web API Development
+# Module 5: Enhanced Calculator Application with Advanced Design Patterns and pandas
+# Thomas Licciardello
+# 10/17/2025
+
 """
 Advanced Object-Oriented Programming: Complete Calculator Implementation
 ====================================================================

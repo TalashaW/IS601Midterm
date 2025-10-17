@@ -2,7 +2,6 @@
 # Calculator REPL Tests #
 ########################
 
-from typing import Literal
 import pytest
 from unittest.mock import Mock, patch
 from decimal import Decimal
@@ -12,6 +11,10 @@ from app.exceptions import ValidationError, OperationError
 
 
 class TestShowHelp:
+  """This class tests the 'show_help' function to ensure that the available commands are displayed correctly. 
+    It verifies that the printed output contains the expected help prompts for the calculator operations defined in the 
+    show_help() function in the calculator_repl project"""
+
   @pytest.mark.parametrize("expected_line", [
     "Available commands:",
     "add, subtract, multiply, divide, power, root - Perform calculations",
@@ -29,6 +32,10 @@ class TestShowHelp:
         assert any(expected_line in str(call) for call in calls)
 
 class TestUserInput:
+    """This class tests the 'get_user_input' function to ensure it handles different types of user inputs correctly. 
+    It checks whether the input is processed as expected and whether the operation is canceled when the input is 'cancel' 
+    (or any variation like 'CANCEL' or 'Cancel'). It also verifies that the correct message is printed based on the input."""
+
     @pytest.mark.parametrize("expected_input,expected_output,print_function_cancel", [
      ("cancel", None, "Operation cancelled\n"),
      ("CANCEL", None, "Operation cancelled\n"),
@@ -51,6 +58,10 @@ class TestUserInput:
 
 
 class TestPerformCalculation:
+    """This class tests the 'perform_calculation' function to ensure the correct operations are performed when valid inputs 
+    are provided. It verifies that the appropriate operation is executed and that the calculator's methods are called correctly. 
+    It also checks that operations are correctly canceled when the user inputs 'Cancel'."""
+
     @pytest.mark.parametrize("operation,first_input,second_input,expected_result",[
      ("add", "7", "3", True),
      ("multiply", "7","3", True),
@@ -67,7 +78,6 @@ class TestPerformCalculation:
                 with patch("app.calculator_repl.OperationFactory.create_operation") as mock_factory:
                     mock_operation = Mock()
                     mock_factory.return_value = mock_operation
-                    
                     perform_calculation(mock_calc, operation)
                     
                     if expected_result:
@@ -78,13 +88,18 @@ class TestPerformCalculation:
                         mock_calc.perform_operation.assert_not_called()
 
 class TestCalculatorREPL:
+     """This class tests the REPL loop for the calculator application. It simulates various commands like 'help', 'clear', 
+     'undo', 'redo', 'history', and verifies that the correct messages are displayed and the correct methods are called . 
+     It also checks the program's behavior when commands 
+     are issued under different conditions, like with or without history."""      
+
      @pytest.mark.parametrize("command, expected_output, has_history",[
      ("help", None, False),
      ("clear", "History cleared",True),
      ("clear", "No history to clear", False),
      ("undo", "Operation undone",True),
      ("undo", "Nothing to undo",False),
-     ("redo", "Operation redone",True),
+     ("redo", "Operation redone" ,True),
      ("redo", "Nothing to redo",False),
     ])
      def test_calculator_REPL(self, command, expected_output, has_history):
@@ -177,16 +192,92 @@ class TestCalculatorREPL:
                     # Verify goodbye message
                     print_calls = [str(call) for call in mock_print.call_args_list]
                     assert any("Goodbye!" in str(call) for call in print_calls)
-    
-class ExceptionErrors:
-    @pytest.mark.parametrize("operation, first_input, second_input, error, error_message" , [
+        
+     def test_empty_command(self):
+        mock_calc = Mock(spec=Calculator)  
+
+        with patch("builtins.input", side_effect=["", "exit"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.Calculator", return_value=mock_calc):
+                    with patch("app.calculator_repl.LoggingObserver"):
+                        with patch("app.calculator_repl.AutoSaveObserver"):
+                            calculator_repl() 
+
+     def test_unknown_command(self):
+        mock_calc = Mock(spec=Calculator)  
+
+        with patch("builtins.input", side_effect=["invalidcommand", "exit"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.Calculator", return_value=mock_calc):
+                    with patch("app.calculator_repl.LoggingObserver"):
+                        with patch("app.calculator_repl.AutoSaveObserver"):
+                            calculator_repl()
+                    
+                    print_calls = [str(call) for call in mock_print.call_args_list]
+                    assert any("Unknown command" in str(call) for call in print_calls)
+
+     def test_keyboard_interrupt(self):
+        mock_calc = Mock(spec=Calculator)  
+
+        with patch("builtins.input", side_effect=[KeyboardInterrupt(), "exit"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.Calculator", return_value=mock_calc):
+                    with patch("app.calculator_repl.LoggingObserver"):
+                        with patch("app.calculator_repl.AutoSaveObserver"):
+                            calculator_repl()
+                    
+                    print_calls = [str(call) for call in mock_print.call_args_list]
+                    assert any("Operation cancelled" in str(call) for call in print_calls)
+
+     def test_eof_error_handling(self):
+        mock_calc = Mock(spec=Calculator)  
+
+        with patch("builtins.input", side_effect=[EOFError(), "exit"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.Calculator", return_value=mock_calc):
+                    with patch("app.calculator_repl.LoggingObserver"):
+                        with patch("app.calculator_repl.AutoSaveObserver"):
+                            calculator_repl()
+                    
+                    print_calls = [str(call) for call in mock_print.call_args_list]
+                    assert any("Input terminated" in str(call) for call in print_calls)
+     
+     def test_fatal_error_during_initialization(self):
+
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.Calculator", side_effect= Exception("Fatal error")):
+                    with pytest.raises(Exception):
+                            calculator_repl()
+                    
+                    print_calls = [str(call) for call in mock_print.call_args_list]
+                    assert any("Fatal error" in str(call) for call in print_calls)
+
+     def test_exit_save_error_handling(self):
+        mock_calc = Mock(spec=Calculator)  
+        mock_calc.save_history.side_effect = Exception("Save failed on exit")
+
+        with patch("builtins.input", side_effect=["exit"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.Calculator", return_value=mock_calc):
+                    with patch("app.calculator_repl.LoggingObserver"):
+                        with patch("app.calculator_repl.AutoSaveObserver"):
+                            calculator_repl()
+                    
+                    print_calls = [str(call) for call in mock_print.call_args_list]
+                    assert any("Could not save history" in str(call) for call in print_calls)    
+                    assert any("Goodbye!" in str(call) for call in print_calls)
+class TestExceptionErrors:
+    """This class tests error handling during calculation in the REPL and ensures that all expected operations (like 'add', 'subtract', 'multiply', etc.) 
+        are included in the OPERATIONS"""
+
+    @pytest.mark.parametrize("operation, first_input, second_input, error_type, error_message" , [
         ("add", "5", "3", ValidationError, "Error:"),
         ("divide", "10", "0", OperationError, "Error:"),
         ("add", "5", "3", Exception, "Unexpected error:"),
     ])       
-    def test_perform_calculation_errors(self, operation, first_input, second_input, exception_type, expected_message):
+    def test_perform_calculation_errors(self, operation, first_input, second_input, error_type, error_message):
         mock_calc = Mock(spec=Calculator)
-        mock_calc.perform_operation.side_effect = exception_type("Test error message")
+        mock_calc.perform_operation.side_effect = error_type("Test error message")
         
         inputs = [first_input, second_input]
         
@@ -199,24 +290,35 @@ class ExceptionErrors:
                     perform_calculation(mock_calc, operation)
                     
                     print_calls = [str(call) for call in mock_print.call_args_list]
-                    assert any(expected_message in str(call) for call in print_calls)
+                    assert any(error_message in str(call) for call in print_calls)
     
-    @pytest.mark.parametrize("operation", list(OPERATIONS)) 
-    def test_expected_operations_in_set(self, operation):
-        """Test that all expected operations are in OPERATIONS."""
-        assert operation in OPERATIONS
-    def test_expected_operations_in_set(self, operation):
-        """Test that each operation is in the OPERATIONS set."""
-        assert operation in OPERATIONS
-    
-    @pytest.mark.parametrize("operation", [
-        "add",
-        "subtract", 
-        "multiply",
-        "divide",
-        "power",
-        "root",
-    ])
+    def test_perform_calculation_first_input_cancelled(self): 
+        mock_calc = Mock(spec=Calculator)  
+
+        with patch("builtins.input", return_value="cancel"):
+            with patch("builtins.print") as mock_print:
+            
+                perform_calculation(mock_calc, "add")
+                mock_calc.perform_operation.assert_not_called()
+                    
+                print_calls = [str(call) for call in mock_print.call_args_list]
+                assert any("Operation cancelled" in str(call) for call in print_calls)
+
+    def test_general_exception_in_repl_loop(self):
+        mock_calc = Mock(spec=Calculator) 
+        mock_calc.show_history.side_effect = Exception("Unexpected error in loop")     
+
+        with patch("builtins.input", side_effect=["history", "exit"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.Calculator", return_value=mock_calc):
+                    with patch("app.calculator_repl.LoggingObserver"):
+                        with patch("app.calculator_repl.AutoSaveObserver"):
+                            calculator_repl()
+                        print_calls = [str(call) for call in mock_print.call_args_list]
+                        assert any("Error:" in str(call) for call in print_calls)
+
+
+    @pytest.mark.parametrize("operation", list(OPERATIONS))
     def test_expected_operations_in_set(self, operation):
         """Test that all expected operations are in OPERATIONS."""
         assert operation in OPERATIONS
