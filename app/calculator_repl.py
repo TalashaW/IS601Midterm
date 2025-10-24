@@ -73,8 +73,13 @@ def perform_calculation(calc, operation_name):
         print(f"\nResult: {result}")
     except (ValidationError, OperationError) as e:
         print(f"Error: {e}")
+        print("Tip: Type 'cancel' during input to abort, or 'help' for commands")
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        print("Please enter valid numbers (e.g., 10, 3.14, -5)")
     except Exception as e:
         print(f"Unexpected error: {e}")
+        logging.error(f"Unexpected error in REPL: {e}", exc_info=True)
 
 def calculator_repl():
     """

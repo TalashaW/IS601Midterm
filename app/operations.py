@@ -249,6 +249,12 @@ class Root(Operation):
         return Decimal(pow(float(a), 1 / float(b)))
 
 class Modulus(Operation):
+    """
+    Modulus operation implementation.
+    
+    Performs the modulus operation to compute the remainder of 
+    the division of two numbers.
+    """
     def validate_operands(self, a: Decimal, b: Decimal) -> None:
         """
         Validate operands, checking for division by zero.
@@ -286,8 +292,8 @@ class IntegerDivision(Operation):
         Validate operands, checking for division by zero.
 
         Args:
-            a (Decimal): The value to convert to percentage.
-            b (Decimal): Total value.
+            a (Decimal): Dividend.
+            b (Decimal): Divisor.
 
         Raises:
             ValidationError: If the divisor is zero.
@@ -298,28 +304,59 @@ class IntegerDivision(Operation):
     
     def execute(self, a: Decimal, b: Decimal) -> Decimal:
         """
-        Compute the remainder of the division of two numbers.
+        Perform integer division (floor division).
         
         Args:
-            a (Decimal): The value to convert to percentage.
-            b (Decimal): Total value.
+            a (Decimal): Dividend.
+            b (Decimal): Divisor.
         
         Returns:
-            Decimal: the percentage value (a/b) *100
+            Decimal: Integer quotient of the division (a // b).
         """
         self.validate_operands(a, b)
         return a // b
 
 class Percentage(Operation):
+    """
+    Percentage calculation implementation.
+    
+    Calculates the percentage of one number with respect to another.
+    Formula: (a / b) * 100
+    """
     def validate_operands(self, a: Decimal, b: Decimal) -> None:
+        """
+        Validate operands for percentage calculation.
+        
+        Overrides the base class method to ensure that the divisor is not zero.
+        
+        Args:
+            a (Decimal): Numerator (the value to convert to percentage).
+            b (Decimal): Denominator (the total or reference value).
+        
+        Raises:
+            ValidationError: If the denominator is zero.
+        """
 
         super().validate_operands(a, b)
         if b == 0:
             raise ValidationError("Division by zero is not allowed")
             
     def execute(self, a: Decimal, b: Decimal) -> Decimal:
-                self.validate_operands(a, b)
-                return (a / b) * 100
+        """
+        Calculate the percentage of a with respect to b.
+        
+        Args:
+            a (Decimal): Numerator (the value to convert to percentage).
+            b (Decimal): Denominator (the total or reference value).
+        
+        Returns:
+            Decimal: The percentage value (a / b) * 100.
+        
+        Example:
+            Percentage(25, 200) returns 12.5 (25 is 12.5% of 200)
+        """
+        self.validate_operands(a, b)
+        return (a / b) * 100
     
 class AbsoluteDifference(Operation):
     """
@@ -330,7 +367,7 @@ class AbsoluteDifference(Operation):
     """         
     def execute(self, a: Decimal, b: Decimal) -> Decimal:
         """
-    Calculate the absolute difference between two numbers.
+        Calculate the absolute difference between two numbers.
         
     Args:
         a (Decimal): First operand.

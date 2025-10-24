@@ -12,6 +12,31 @@ from typing import Optional
 from dotenv import load_dotenv
 
 from app.exceptions import ConfigurationError
+"""
+Configuration management for the calculator application.
+
+This module handles loading and validating configuration settings from
+environment variables (via .env file) and provides sensible defaults.
+
+Environment Variables:
+    CALCULATOR_BASE_DIR: Project root directory (default: auto-detected)
+    CALCULATOR_LOG_DIR: Log file directory (default: {base_dir}/logs)
+    CALCULATOR_HISTORY_DIR: History file directory (default: {base_dir}/history)
+    CALCULATOR_MAX_HISTORY_SIZE: Maximum history entries (default: 1000)
+    CALCULATOR_AUTO_SAVE: Auto-save history (default: true)
+    CALCULATOR_PRECISION: Decimal precision (default: 10)
+    CALCULATOR_MAX_INPUT_VALUE: Maximum input value (default: 1e999)
+    CALCULATOR_DEFAULT_ENCODING: File encoding (default: utf-8)
+
+Example .env file:
+    CALCULATOR_LOG_DIR=./logs
+    CALCULATOR_HISTORY_DIR=./history
+    CALCULATOR_MAX_HISTORY_SIZE=1000
+    CALCULATOR_AUTO_SAVE=true
+    CALCULATOR_PRECISION=10
+    CALCULATOR_MAX_INPUT_VALUE=1e999
+    CALCULATOR_DEFAULT_ENCODING=utf-8
+"""
 
 # Load environment variables from a .env file into the program's environment
 load_dotenv()

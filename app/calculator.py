@@ -288,25 +288,38 @@ class Calculator:
             if self.config.history_file.exists():
                 # Read the CSV file into a pandas DataFrame
                 df = pd.read_csv(self.config.history_file)
-                if not df.empty:
-                    # Deserialize each row into a Calculation instance
-                    self.history = [
-                        Calculation.from_dict({
-                            'operation': row['operation'],
-                            'operand1': row['operand1'],
-                            'operand2': row['operand2'],
-                            'result': row['result'],
-                            'timestamp': row['timestamp']
-                        })
-                        for _, row in df.iterrows()
-                    ]
-                    logging.info(f"Loaded {len(self.history)} calculations from history")
-                else:
+                
+                if df.empty:
                     logging.info("Loaded empty history file")
+                    return                 
+                
+                required_columns = ['operation', 'operand1', 'operand2', 'result', 'timestamp']
+                missing_columns = set(required_columns) - set(df.columns)                
+                
+                if missing_columns:
+                    raise OperationError(f"CSV missing required columns: {missing_columns}")
+                
+                    # Deserialize each row into a Calculation instance
+                self.history = [
+                    Calculation.from_dict({
+                        'operation': row['operation'],
+                        'operand1': row['operand1'],
+                        'operand2': row['operand2'],
+                        'result': row['result'],
+                        'timestamp': row['timestamp']
+                    })
+                    for _, row in df.iterrows()
+                ]
+                logging.info(f"Loaded {len(self.history)} calculations from history")
             else:
-                # If no history file exists, start with an empty history
-                logging.info("No history file found - starting with empty history")
-        except Exception as e:
+                logging.info("No history file found - creating new history file")
+                pd.DataFrame(
+                    columns=['operation', 'operand1', 'operand2', 'result', 'timestamp']
+                ).to_csv(self.config.history_file, index=False)
+        except OperationError:
+        # Re-raise OperationErrors as-is
+            raise    
+        except Exception as e:            
             # Log and raise an OperationError if loading fails
             logging.error(f"Failed to load history: {e}")
             raise OperationError(f"Failed to load history: {e}")

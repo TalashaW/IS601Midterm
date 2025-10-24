@@ -31,9 +31,17 @@ class HistoryObserver(ABC):
 class LoggingObserver(HistoryObserver):
     """
     Observer that logs calculations to a file.
-
+    
     Implements the Observer pattern by listening for new calculations and logging
-    their details to a log file.
+    their details to a log file using Python's logging module.
+    
+    Logged Information:
+        - Operation name (e.g., "Addition", "Modulus")
+        - Operand values
+        - Result value
+    
+    Example Log Entry:
+        2025-01-15 10:30:45 - INFO - Calculation performed: Addition (5, 3) = 8
     """
 
     def update(self, calculation: Calculation) -> None:
@@ -58,10 +66,21 @@ class LoggingObserver(HistoryObserver):
 class AutoSaveObserver(HistoryObserver):
     """
     Observer that automatically saves calculations.
-
+    
     Implements the Observer pattern by listening for new calculations and
     triggering an automatic save of the calculation history if the auto-save
     feature is enabled in the configuration.
+    
+    Behavior:
+        - Checks config.auto_save flag before saving
+        - Uses pandas to save history to CSV
+        - Logs auto-save events
+    
+    Args:
+        calculator: Calculator instance with 'config' and 'save_history' attributes
+    
+    Raises:
+        TypeError: If calculator lacks required attributes
     """
 
     def __init__(self, calculator: Any):

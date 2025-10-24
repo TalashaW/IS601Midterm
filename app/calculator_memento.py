@@ -12,10 +12,18 @@ from app.calculation import Calculation
 @dataclass
 class CalculatorMemento:
     """
-    This class implements the memento design pattern to store a snapshot of the 
+    Memento for storing calculator history snapshots.
+    
+    This class implements the Memento design pattern to store a snapshot of the
     calculator state for undo/redo functionality.
+    
+    Example:
+        >>> calc = Calculator()
+        >>> calc.perform_operation(5, 3)  # History: [5+3=8]
+        >>> calc.undo()  # History: []
+        >>> calc.redo()  # History: [5+3=8]
     """
-
+    
     history: List[Calculation] 
     timestamp: datetime.datetime = field(default_factory=datetime.datetime.now)  
     """History captures a snapshot of the calculations at the moment of creation.

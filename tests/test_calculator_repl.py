@@ -17,7 +17,7 @@ class TestShowHelp:
 
   @pytest.mark.parametrize("expected_line", [
     "Available commands:",
-    "add, subtract, multiply, divide, power, root - Perform calculations",
+    "add, subtract, multiply, divide, power, root, modulus, intdiv, percentage, absdiff - Perform calculations",
     "history - Show calculation history",
     "clear - Clear calculation history",
     "exit - Exit the calculator"
