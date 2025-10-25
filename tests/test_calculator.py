@@ -18,6 +18,14 @@ def calculator():
     with TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         config = CalculatorConfig(base_dir=temp_path)
+        
+        calc = Calculator(config=config)
+
+        calc.history.clear()
+        calc.undo_stack.clear()
+        calc.redo_stack.clear()
+        
+        yield calc
 
         # Patch properties to use the temporary directory paths
         with patch.object(CalculatorConfig, 'log_dir', new_callable=PropertyMock) as mock_log_dir, \
@@ -31,10 +39,31 @@ def calculator():
             mock_history_dir.return_value = temp_path / "history"
             mock_history_file.return_value = temp_path / "history/calculator_history.csv"
             
-            # Return an instance of Calculator with the mocked config
-            yield Calculator(config=config)
+
+
 
 # Test Calculator Initialization
+
+def test_init_with_corrupted_history_file():
+    """Test calculator initialization when history file is corrupted."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        
+        # Create history directory and a corrupted CSV file
+        config.history_dir.mkdir(parents=True, exist_ok=True)
+        history_file = config.history_file
+        
+        # Write corrupted CSV data (wrong format)
+        with open(history_file, 'w') as f:
+            f.write("corrupted,invalid,data\n")
+            f.write("not,a,valid,csv,format\n")
+        
+        calc = Calculator(config=config)
+        
+        # Verify calculator initialized with empty history
+        assert calc.history == []
+        assert calc.config == config
 
 def test_calculator_initialization(calculator):
     assert calculator.history == []
@@ -54,6 +83,31 @@ def test_logging_setup(logging_info_mock):
         # Instantiate calculator to trigger logging
         calculator = Calculator(CalculatorConfig())
         logging_info_mock.assert_any_call("Calculator initialized with configuration")
+
+def test_logging_setup_makedirs_failure():
+    """Test calculator initialization when log directory cannot be created."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        
+        with patch('os.makedirs') as mock_makedirs:
+            mock_makedirs.side_effect = PermissionError("Cannot create directory")
+            
+            with pytest.raises(PermissionError, match="Cannot create directory"):
+                Calculator(config=config)
+
+def test_logging_basicconfig_failure():
+    """Test when logging.basicConfig fails."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        
+        # Mock logging.basicConfig to raise OSError
+        with patch('logging.basicConfig') as mock_basic_config:
+            mock_basic_config.side_effect = OSError("Cannot write to log file")
+            
+            with pytest.raises(OSError, match="Cannot write to log file"):
+                Calculator(config=config)
 
 # Test Adding and Removing Observers
 
@@ -101,6 +155,24 @@ def test_perform_operation_operation_error(calculator):
     with pytest.raises(OperationError, match="No operation set"):
         calculator.perform_operation(2, 3)
 
+def test_perform_operation_with_unexpected_runtime_error():
+    """Test perform_operation when operation.execute raises unexpected RuntimeError."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        calc = Calculator(config=config)
+        
+        # Create a mock operation that raises RuntimeError
+        mock_operation = Mock()
+        mock_operation.execute.side_effect = RuntimeError("Unexpected calculation error")
+        mock_operation.__str__ = Mock(return_value="MockOperation")
+        
+        calc.set_operation(mock_operation)
+        
+        with pytest.raises(OperationError) as exc_info:
+            calc.perform_operation(5, 3)
+        assert "Operation failed" in str(exc_info.value)
+        assert "Unexpected calculation error" in str(exc_info.value)
 # Test Undo/Redo Functionality
 
 def test_undo(calculator):
@@ -128,6 +200,26 @@ def test_save_history(mock_to_csv, calculator):
     calculator.save_history()
     mock_to_csv.assert_called_once()
 
+def test_save_history_with_permission_error():
+    """Test save_history when file cannot be written due to permissions."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        calc = Calculator(config=config)
+        
+        # Add a calculation to history
+        calc.set_operation(OperationFactory.create_operation('add'))
+        calc.perform_operation(5, 3)
+        
+        # Mock to_csv to raise PermissionError
+        with patch.object(pd.DataFrame, 'to_csv') as mock_to_csv:
+            mock_to_csv.side_effect = PermissionError("Cannot write to file")
+            
+            with pytest.raises(OperationError) as exc_info:
+                calc.save_history()
+            
+            assert "Failed to save history" in str(exc_info.value)
+
 @patch('app.calculator.pd.read_csv')
 @patch('app.calculator.Path.exists', return_value=True)
 def test_load_history(mock_exists, mock_read_csv, calculator):
@@ -152,6 +244,31 @@ def test_load_history(mock_exists, mock_read_csv, calculator):
         assert calculator.history[0].result == Decimal("5")
     except OperationError:
         pytest.fail("Loading history failed due to OperationError")
+
+def test_load_history_with_pandas_parser_error():
+    """Test load_history when pandas raises a ParserError."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        calc = Calculator(config=config)
+        
+        # Mock pd.read_csv to raise a pandas error
+        with patch('app.calculator.pd.read_csv') as mock_read_csv:
+            with patch('app.calculator.Path.exists', return_value=True):
+                mock_read_csv.side_effect = pd.errors.ParserError("Malformed CSV")
+                
+                with pytest.raises(OperationError) as exc_info:
+                    calc.load_history()
+                
+                assert "Failed to load history" in str(exc_info.value)
+
+
+def test_load_history_with_file_not_found_error():
+    """Test load_history when CSV file exists but cannot be read."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        calc = Calculator(config=config)
         
             
 # Test Clearing History
@@ -164,6 +281,22 @@ def test_clear_history(calculator):
     assert calculator.history == []
     assert calculator.undo_stack == []
     assert calculator.redo_stack == []
+
+def test_clear_history_returns_false_when_empty():
+    """Test clear_history returns False when history is already empty."""
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
+        calc = Calculator(config=config)
+        
+        # History is empty by default
+        assert len(calc.history) == 0
+        
+        result = calc.clear_history()
+        assert result is False
+        
+        # Verify history is still empty
+        assert len(calc.history) == 0
 
 # Test REPL Commands (using patches for input/output handling)
 

@@ -1,176 +1,145 @@
-########################
-# Calculator Config    #
-########################
-
-from dataclasses import dataclass
-from decimal import Decimal
-from numbers import Number
-from pathlib import Path
+import pytest
 import os
-from typing import Optional
-
-from dotenv import load_dotenv
-
+from decimal import Decimal
+from pathlib import Path
+from app.calculator_config import CalculatorConfig
 from app.exceptions import ConfigurationError
 
-# Load environment variables from a .env file into the program's environment
-load_dotenv()
+# Set up temporary environment variables for testing
+os.environ['CALCULATOR_MAX_HISTORY_SIZE'] = '500'
+os.environ['CALCULATOR_AUTO_SAVE'] = 'false'
+os.environ['CALCULATOR_PRECISION'] = '8'
+os.environ['CALCULATOR_MAX_INPUT_VALUE'] = '1000'
+os.environ['CALCULATOR_DEFAULT_ENCODING'] = 'utf-16'
+os.environ['CALCULATOR_LOG_DIR'] = './test_logs'
+os.environ['CALCULATOR_HISTORY_DIR'] = './test_history'
+os.environ['CALCULATOR_HISTORY_FILE'] = './test_history/test_history.csv'
+os.environ['CALCULATOR_LOG_FILE'] = './test_logs/test_log.log'
 
+# Helper function to clear specific environment variables
+def clear_env_vars(*args):
+    for var in args:
+        os.environ.pop(var, None)
 
-def get_project_root() -> Path:
-    """
-    Get the project root directory.
+def test_default_configuration():
+    config = CalculatorConfig()
+    assert config.max_history_size == 500
+    assert config.auto_save is False
+    assert config.precision == 8
+    assert config.max_input_value == Decimal("1000")
+    assert config.default_encoding == 'utf-16'
+    assert config.log_dir == Path('./test_logs').resolve()
+    assert config.history_dir == Path('./test_history').resolve()
+    assert config.history_file == Path('./test_history/test_history.csv').resolve()
+    assert config.log_file == Path('./test_logs/test_log.log').resolve()
 
-    This function determines the root directory of the project by navigating up
-    the directory hierarchy from the current file's location.
+def test_custom_configuration():
+    config = CalculatorConfig(
+        max_history_size=300,
+        auto_save=True,
+        precision=5,
+        max_input_value=Decimal("500"),
+        default_encoding="ascii"
+    )
+    assert config.max_history_size == 300
+    assert config.auto_save is True
+    assert config.precision == 5
+    assert config.max_input_value == Decimal("500")
+    assert config.default_encoding == "ascii"
 
-    Returns:
-        Path: The root directory path of the project.
-    """
-    # Get the directory of the current file (app/calculator_config.py)
-    current_file = Path(__file__)
-    # Navigate up two levels to reach the project root (from app/calculator_config.py to project root)
-    return current_file.parent.parent
+def test_directory_properties():
+    clear_env_vars('CALCULATOR_LOG_DIR', 'CALCULATOR_HISTORY_DIR')
+    config = CalculatorConfig(base_dir=Path('/custom_base_dir'))
+    assert config.log_dir == Path('/custom_base_dir/logs').resolve()
+    assert config.history_dir == Path('/custom_base_dir/history').resolve()
 
+def test_file_properties():
+    clear_env_vars('CALCULATOR_HISTORY_FILE', 'CALCULATOR_LOG_FILE')
+    config = CalculatorConfig(base_dir=Path('/custom_base_dir'))
+    assert config.history_file == Path('/custom_base_dir/history/calculator_history.csv').resolve()
+    assert config.log_file == Path('/custom_base_dir/logs/calculator.log').resolve()
 
-@dataclass
-class CalculatorConfig:
-    """
-    Calculator configuration settings.
+def test_invalid_max_history_size():
+    with pytest.raises(ConfigurationError, match="max_history_size must be positive"):
+        config = CalculatorConfig(max_history_size=-1)
+        config.validate()
 
-    This class manages all configuration parameters required by the calculator
-    application, including directory paths, history size, auto-save preferences,
-    calculation precision, maximum input values, and default encoding.
+def test_invalid_precision():
+    with pytest.raises(ConfigurationError, match="precision must be positive"):
+        config = CalculatorConfig(precision=-1)
+        config.validate()
 
-    Configuration can be set via environment variables or by passing parameters
-    directly to the class constructor.
-    """
+def test_invalid_max_input_value():
+    with pytest.raises(ConfigurationError, match="max_input_value must be positive"):
+        config = CalculatorConfig(max_input_value=Decimal("-1"))
+        config.validate()
 
-    def __init__(
-        self,
-        base_dir: Optional[Path] = None,
-        max_history_size: Optional[int] = None,
-        auto_save: Optional[bool] = None,
-        precision: Optional[int] = None,
-        max_input_value: Optional[Number] = None,
-        default_encoding: Optional[str] = None
-    ):
-        """
-        Initialize configuration with environment variables and defaults.
+def test_auto_save_env_var_true():
+    os.environ['CALCULATOR_AUTO_SAVE'] = 'true'
+    config = CalculatorConfig(auto_save=None)
+    assert config.auto_save is True
 
-        Args:
-            base_dir (Optional[Path], optional): Base directory for the calculator. Defaults to None.
-            max_history_size (Optional[int], optional): Maximum number of history entries. Defaults to None.
-            auto_save (Optional[bool], optional): Whether to auto-save history. Defaults to None.
-            precision (Optional[int], optional): Number of decimal places for calculations. Defaults to None.
-            max_input_value (Optional[Number], optional): Maximum allowed input value. Defaults to None.
-            default_encoding (Optional[str], optional): Default encoding for file operations. Defaults to None.
-        """
-        # Set base directory to project root by default
-        project_root = get_project_root()
-        self.base_dir = base_dir or Path(
-            os.getenv('CALCULATOR_BASE_DIR', str(project_root))
-        ).resolve()
+def test_auto_save_env_var_one():
+    os.environ['CALCULATOR_AUTO_SAVE'] = '1'
+    config = CalculatorConfig(auto_save=None)
+    assert config.auto_save is True
 
-        # Maximum history size
-        self.max_history_size = max_history_size or int(
-            os.getenv('CALCULATOR_MAX_HISTORY_SIZE', '1000')
-        )
+def test_auto_save_env_var_false():
+    os.environ['CALCULATOR_AUTO_SAVE'] = 'false'
+    config = CalculatorConfig(auto_save=None)
+    assert config.auto_save is False
 
-        # Auto-save preference
-        auto_save_env = os.getenv('CALCULATOR_AUTO_SAVE', 'true').lower()
-        self.auto_save = auto_save if auto_save is not None else (
-            auto_save_env == 'true' or auto_save_env == '1'
-        )
+def test_auto_save_env_var_zero():
+    os.environ['CALCULATOR_AUTO_SAVE'] = '0'
+    config = CalculatorConfig(auto_save=None)
+    assert config.auto_save is False
 
-        # Calculation precision
-        self.precision = precision or int(
-            os.getenv('CALCULATOR_PRECISION', '10')
-        )
+def test_environment_overrides():
+    config = CalculatorConfig()
+    assert config.max_history_size == 500
+    assert config.auto_save is False
+    assert config.precision == 8
+    assert config.max_input_value == Decimal("1000")
+    assert config.default_encoding == 'utf-16'
 
-        # Maximum input value allowed
-        self.max_input_value = max_input_value or Decimal(
-            os.getenv('CALCULATOR_MAX_INPUT_VALUE', '1e999')
-        )
+def test_default_fallbacks():
+    # Clear all related environment variables and test default values
+    clear_env_vars(
+        'CALCULATOR_MAX_HISTORY_SIZE', 'CALCULATOR_AUTO_SAVE', 'CALCULATOR_PRECISION',
+        'CALCULATOR_MAX_INPUT_VALUE', 'CALCULATOR_DEFAULT_ENCODING'
+    )
+    config = CalculatorConfig()
+    assert config.max_history_size == 1000
+    assert config.auto_save is True
+    assert config.precision == 10
+    assert config.max_input_value == Decimal("1e999")
+    assert config.default_encoding == 'utf-8'
 
-        # Default encoding for file operations
-        self.default_encoding = default_encoding or os.getenv(
-            'CALCULATOR_DEFAULT_ENCODING', 'utf-8'
-        )
+def test_get_project_root():
+    # Test that get_project_root() points to the correct path
+    from app.calculator_config import get_project_root
+    assert (get_project_root() / "app").exists()  # Adjust the path check as needed based on your file structure
 
-    @property
-    def log_dir(self) -> Path:
-        """
-        Get log directory path.
+def test_log_dir_property():
+    # Clear environment to test base_dir path creation for log_dir
+    clear_env_vars('CALCULATOR_LOG_DIR')
+    config = CalculatorConfig(base_dir=Path('/new_base_dir'))
+    assert config.log_dir == Path('/new_base_dir/logs').resolve()
 
-        Determines the directory path where log files will be stored.
+def test_history_dir_property():
+    # Clear environment to test base_dir path creation for history_dir
+    clear_env_vars('CALCULATOR_HISTORY_DIR')
+    config = CalculatorConfig(base_dir=Path('/new_base_dir'))
+    assert config.history_dir == Path('/new_base_dir/history').resolve()
 
-        Returns:
-            Path: The log directory path.
-        """
-        return Path(os.getenv(
-            'CALCULATOR_LOG_DIR',
-            str(self.base_dir / "logs")
-        )).resolve()
+def test_log_file_property():
+    # Clear environment to test base_dir path creation for log_file
+    clear_env_vars('CALCULATOR_LOG_FILE')
+    config = CalculatorConfig(base_dir=Path('/new_base_dir'))
+    assert config.log_file == Path('/new_base_dir/logs/calculator.log').resolve()
 
-    @property
-    def history_dir(self) -> Path:
-        """
-        Get history directory path.
-
-        Determines the directory path where calculation history files will be stored.
-
-        Returns:
-            Path: The history directory path.
-        """
-        return Path(os.getenv(
-            'CALCULATOR_HISTORY_DIR',
-            str(self.base_dir / "history")
-        )).resolve()
-
-    @property
-    def history_file(self) -> Path:
-        """
-        Get history file path.
-
-        Determines the file path for storing calculation history in CSV format.
-
-        Returns:
-            Path: The history file path.
-        """
-        return Path(os.getenv(
-            'CALCULATOR_HISTORY_FILE',
-            str(self.history_dir / "calculator_history.csv")
-        )).resolve()
-
-    @property
-    def log_file(self) -> Path:
-        """
-        Get log file path.
-
-        Determines the file path for storing log entries.
-
-        Returns:
-            Path: The log file path.
-        """
-        return Path(os.getenv(
-            'CALCULATOR_LOG_FILE',
-            str(self.log_dir / "calculator.log")
-        )).resolve()
-
-    def validate(self) -> None:
-        """
-        Validate configuration settings.
-
-        Ensures that all configuration parameters meet the required criteria.
-        Raises ConfigurationError if any validation fails.
-
-        Raises:
-            ConfigurationError: If any configuration parameter is invalid.
-        """
-        if self.max_history_size <= 0:
-            raise ConfigurationError("max_history_size must be positive")
-        if self.precision <= 0:
-            raise ConfigurationError("precision must be positive")
-        if self.max_input_value <= 0:
-            raise ConfigurationError("max_input_value must be positive")
+def test_history_file_property():
+    # Clear environment to test base_dir path creation for history_file
+    clear_env_vars('CALCULATOR_HISTORY_FILE')
+    config = CalculatorConfig(base_dir=Path('/new_base_dir'))
+    assert config.history_file == Path('/new_base_dir/history/calculator_history.csv').resolve()

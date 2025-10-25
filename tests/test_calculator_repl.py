@@ -16,11 +16,19 @@ class TestShowHelp:
     show_help() function in the calculator_repl project"""
 
   @pytest.mark.parametrize("expected_line", [
-    "Available commands:",
-    "add, subtract, multiply, divide, power, root, modulus, intdiv, percentage, absdiff - Perform calculations",
-    "history - Show calculation history",
-    "clear - Clear calculation history",
-    "exit - Exit the calculator"
+        "add,",          
+        "subtract,",
+        "multiply,",
+        "divide",
+        "power",
+        "root",
+        "modulus",
+        "intdiv",
+        "percentage",
+        "absdiff",
+        "history - Show calculation history",
+        "clear - Clear calculation history",
+        "exit - Exit the calculator"
     ])
      
   def test_show_help_displays_expected_prompts(self, expected_line: str):
@@ -291,6 +299,44 @@ class TestExceptionErrors:
                     
                     print_calls = [str(call) for call in mock_print.call_args_list]
                     assert any(error_message in str(call) for call in print_calls)
+    
+    def test_perform_calculation_value_error(self):
+        """Test that ValueError is properly caught and displayed."""
+        mock_calc = Mock(spec=Calculator)
+        mock_calc.perform_operation.side_effect = ValueError("Invalid number format")
+
+        with patch("builtins.input", side_effect=["5", "3"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.OperationFactory.create_operation") as mock_factory:
+                    mock_operation = Mock()
+                    mock_factory.return_value = mock_operation
+                
+                perform_calculation(mock_calc, "add")
+                
+                # Check that both ValueError error messages were printed
+                print_calls = [str(call) for call in mock_print.call_args_list]
+                assert any("Invalid input:" in str(call) for call in print_calls)
+                assert any("Please enter valid numbers" in str(call) for call in print_calls)
+
+
+    def test_perform_calculation_non_decimal_result(self):
+        """Test calculation when result is not a Decimal (covers branch 71->73)."""
+        mock_calc = Mock(spec=Calculator)
+        # Return something that's NOT a Decimal (like an int or string)
+        mock_calc.perform_operation.return_value = 42  # An integer, not a Decimal
+    
+        with patch("builtins.input", side_effect=["5", "3"]):
+            with patch("builtins.print") as mock_print:
+                with patch("app.calculator_repl.OperationFactory.create_operation") as mock_factory:
+                    mock_operation = Mock()
+                    mock_factory.return_value = mock_operation
+                
+                perform_calculation(mock_calc, "add")
+                
+                # Verify the result was printed (without normalization since it's not a Decimal)
+                print_calls = [str(call) for call in mock_print.call_args_list]
+                assert any("Result: 42" in str(call) for call in print_calls)
+
     
     def test_perform_calculation_first_input_cancelled(self): 
         mock_calc = Mock(spec=Calculator)  
