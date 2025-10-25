@@ -44,25 +44,24 @@ class TestUserInput:
     It checks whether the input is processed as expected and whether the operation is canceled when the input is 'cancel' 
     (or any variation like 'CANCEL' or 'Cancel'). It also verifies that the correct message is printed based on the input."""
 
-    @pytest.mark.parametrize("expected_input,expected_output,print_function_cancel", [
-     ("cancel", None, "Operation cancelled\n"),
-     ("CANCEL", None, "Operation cancelled\n"),
-     ("Cancel", None, "Operation cancelled\n"),
-     ("hello", "hello", ""),             # Not cancel, should return the input
-     ("123", "123", ""),                 # Not cancel
+    @pytest.mark.parametrize("expected_input,expected_output,should_print_cancel", [
+    ("cancel", None, True),
+    ("CANCEL", None, True),
+    ("Cancel", None, True),
+    ("hello", "hello", False),
+    ("123", "123", False),
 ])
-    def test_get_user_input(self, expected_input: str, expected_output: str, print_function_cancel: bool):
+    def test_get_user_input(self, expected_input: str, expected_output: str, should_print_cancel: bool):
         with patch("builtins.input", return_value=expected_input):
-            with patch("builtins.print") as mock_print:
-                with patch("app.calculator_repl.LoggingObserver"):
-                    with patch("app.calculator_repl.AutoSaveObserver"):
-                        result = get_user_input("Enter something: ")
-                        assert result == expected_output
+         with patch("builtins.print") as mock_print:
+            result = get_user_input("Enter something: ")
+            assert result == expected_output
 
-                if print_function_cancel:
-                    mock_print.assert_called_with("Operation cancelled")
-                else:
-                    mock_print.assert_not_called()
+            if should_print_cancel:
+                print_calls = [str(call) for call in mock_print.call_args_list]
+                assert any("Operation cancelled" in str(call) for call in print_calls)
+            else:
+                mock_print.assert_not_called()
 
 
 class TestPerformCalculation:

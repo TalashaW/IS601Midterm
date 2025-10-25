@@ -7,30 +7,32 @@ from app.calculator import Calculator
 from app.exceptions import OperationError, ValidationError
 from app.history import AutoSaveObserver, LoggingObserver
 from app.operations import OperationFactory
+from colorama import Fore, Style, init
 
 OPERATIONS = {'add', 'subtract', 'multiply', 'divide', 
               'power', 'root', 'modulus','intdiv',
               'percentage','absdiff'}
 
 def show_help():
-    print("=" * 60)
+    init(autoreset=True)
+    print(Fore.CYAN + "=" * 60)
     """Display available commands."""
-    print("\nAvailable commands:")
-    print("\nBasic arithmetic:")
-    print("  add, ")
-    print("  subtract,")
-    print("  multiply, ") 
-    print("  divide")
-    print("=" * 60) 
-    print("\nAdvanced operations:")
-    print("  power") 
-    print("  root")
-    print("  modulus")
-    print("  intdiv")
-    print("  percentage")
-    print("  absdiff")
-    print("=" * 60)
-    print("\nSession management: ")
+    print(Fore.YELLOW + Style.BRIGHT + "\nAvailable commands:")
+    print(Fore.GREEN + "\nBasic arithmetic:")
+    print("  add -- Addition(a + b)") 
+    print("  subtract -- Subtraction (a - b)") 
+    print("  multiply -- Multiplication (a × b)") 
+    print("  divide -- Division (a / b)") 
+    print(Fore.CYAN + "=" * 60) 
+    print(Fore.GREEN + "\nAdvanced operations:")
+    print("  power -- Exponentiation (a ^ b)")
+    print("  root -- Root calculation (ᵇ√a)") 
+    print("  modulus -- Modulo operation (a % b)")
+    print("  intdiv -- Integer division (a // b)") 
+    print("  percentage -- percentage ((a/b) × 100)") 
+    print("  absdiff -- Absolute difference (|a - b|)") 
+    print(Fore.CYAN + "=" * 60)
+    print(Fore.GREEN +"\nSession management: ")
     print("  history - Show calculation history")
     print("  clear - Clear calculation history")
     print("  undo - Undo the last calculation")
@@ -40,20 +42,20 @@ def show_help():
     print("  help - Exit the calculator")
     print("  exit - Exit the calculator")
     print("  ")
-    print("=" * 60)
+    print(Fore.CYAN + "=" * 60)
 
 def get_user_input(prompt):
     """Get user input with cancel support. Returns None if cancelled."""
     value = input(prompt)
     if value.lower() == 'cancel':
-        print("Operation cancelled")
+        print(Fore.YELLOW + "Operation cancelled")
         return None
     return value
 
 def perform_calculation(calc, operation_name):
     """Perform an arithmetic calculation."""
     try:
-        print("\nEnter numbers (or 'cancel' to abort):")
+        print(Fore.CYAN + "\nEnter numbers (or 'cancel' to abort):")
         
         a = get_user_input("First number: ")
         if a is None:
@@ -70,18 +72,20 @@ def perform_calculation(calc, operation_name):
         # Normalize the result if it's a Decimal
         if isinstance(result, Decimal):
             result = result.normalize()
-        print(f"\nResult: {result}")
+        print(Fore.GREEN + Style.BRIGHT + f"\nResult: {result}")
     except (ValidationError, OperationError) as e:
-        print(f"Error: {e}")
-        print("Tip: Type 'cancel' during input to abort, or 'help' for commands")
+        print(Fore.RED + f"Error: {e}")
+        print(Fore.YELLOW + "Tip: Type 'cancel' during input to abort, or 'help' for commands")
     except ValueError as e:
-        print(f"Invalid input: {e}")
-        print("Please enter valid numbers (e.g., 10, 3.14, -5)")
+        print(Fore.RED + f"Invalid input: {e}")
+        print(Fore.YELLOW + "Please enter valid numbers (e.g., 10, 3.14, -5)")
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(Fore.RED + f"Unexpected error: {e}")
         logging.error(f"Unexpected error in REPL: {e}", exc_info=True)
 
 def calculator_repl():
+    init(autoreset=True)
+
     """
     Command-line interface for the calculator.
     Implements a Read-Eval-Print Loop (REPL) that continuously prompts the user
@@ -93,11 +97,11 @@ def calculator_repl():
         # Register observers for logging and auto-saving history
         calc.add_observer(LoggingObserver())
         calc.add_observer(AutoSaveObserver(calc))
-        print("Calculator started. Type 'help' for commands.")
+        print(Fore.CYAN + "Calculator started. Type 'help' for commands.")
         while True:
             try:
                 # Prompt the user for a command
-                command = input("\nEnter command: ").lower().strip()
+                command = input(Fore.MAGENTA + Style.BRIGHT +"\nEnter command: ").lower().strip()
                 if not command:
                     continue
                 if command == 'help':
@@ -107,16 +111,16 @@ def calculator_repl():
                     # Attempt to save history before exiting
                     try:
                         calc.save_history()
-                        print("History saved successfully.")
+                        print(Fore.GREEN + "History saved successfully.")
                     except Exception as e:
-                        print(f"Warning: Could not save history: {e}")
-                    print("Goodbye!")
+                        print(Fore.YELLOW +f"Warning: Could not save history: {e}")
+                    print(Fore.CYAN + Style.BRIGHT +"Goodbye!")
                     break
                 if command == 'history':
                     # Display calculation history
                     history = calc.show_history()
                     if not history:
-                        print("No calculations in history")
+                        print(Fore.YELLOW + "No calculations in history")
                     else:
                         print("\nCalculation History:")
                         for i, entry in enumerate(history, 1):
@@ -124,52 +128,52 @@ def calculator_repl():
                     continue
                 if command == 'clear':
                     if calc.clear_history():
-                        print("History cleared")
+                        print(Fore.GREEN + "History cleared")
                     else:
-                        print("No history to clear")
+                        print(Fore.YELLOW + "No history to clear")
                     continue
                 if command == 'undo':
                     if calc.undo():
-                        print("Operation undone")
+                        print(Fore.GREEN + "Operation undone")
                     else:
-                        print("Nothing to undo")
+                        print(Fore.YELLOW + "Nothing to undo")
                     continue
                 if command == 'redo':
                     if calc.redo():
-                        print("Operation redone")
+                        print(Fore.GREEN + "Operation redone")
                     else:
-                        print("Nothing to redo")
+                        print(Fore.YELLOW + "Nothing to redo")
                     continue
                 if command == 'save':
                     try:
                         calc.save_history()
-                        print("History saved successfully")
+                        print(Fore.GREEN + "History saved successfully")
                     except Exception as e:
                         print(f"Error saving history: {e}")
                     continue
                 if command == 'load':
                     try:
                         calc.load_history()
-                        print("History loaded successfully")
+                        print(Fore.GREEN + "History loaded successfully")
                     except Exception as e:
-                        print(f"Error loading history: {e}")
+                        print(Fore.RED +f"Error loading history: {e}")
                     continue
                 if command in OPERATIONS:
                     perform_calculation(calc, command)
                     continue
                 # Handle unknown commands
-                print(f"Unknown command: '{command}'. Type 'help' for available commands.")
+                print(Fore.YELLOW + f"Unknown command: '{command}'. Type 'help' for available commands.")
             except KeyboardInterrupt:
-                print("\nOperation cancelled")
+                print(Fore.YELLOW + "\nOperation cancelled")
                 continue
             except EOFError:
-                print("\nInput terminated. Exiting...")
+                print(Fore.YELLOW + "\nInput terminated. Exiting...")
                 break
             except Exception as e:
-                print(f"Error: {e}")
+                print(Fore.RED + f"Error: {e}")
                 continue
     except Exception as e:
         # Handle fatal errors during initialization
-        print(f"Fatal error: {e}")
-        logging.error(f"Fatal error in calculator REPL: {e}")
+        print(Fore.RED + f"Fatal error: {e}")
+        logging.error(Fore.RED + f"Fatal error in calculator REPL: {e}")
         raise

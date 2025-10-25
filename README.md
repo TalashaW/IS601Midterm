@@ -1,264 +1,414 @@
-# 📦 Project Setup
+# Calculator Application
+
+A robust, feature-rich command-line calculator application built with Python, implementing multiple design patterns and best practices for software development.
 
 ---
 
-# 🧩 1. Install Homebrew (Mac Only)
+## Project Overview
 
-> Skip this step if you're on Windows.
+This advanced calculator application focuses on building an advanced calculator application with various arithmetic operations, a command-line interface (REPL), and robust error handling. You'll use several design patterns (Factory, Memento, Observer) and implement features like undo/redo, logging, history management, and CI/CD pipelines.
 
-Homebrew is a package manager for macOS.  
-You’ll use it to easily install Git, Python, Docker, etc.
+### Key Features
 
-**Install Homebrew:**
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-**Verify Homebrew:**
-
-```bash
-brew --version
-```
-
-If you see a version number, you're good to go.
+- Multiple arithmetic operations: Addition, subtraction, multiplication, division, power, root, modulus, integer division, percentage, and absolute difference
+- Interactive REPL interface: Command-line interface with colorful output using Colorama
+- History management: Track, save, load, and clear calculation history
+- Undo/Redo functionality: Revert or reapply operations using the Memento pattern
+- Observer pattern: Real-time logging and auto-save capabilities
+- Configuration management: Flexible settings via environment variables
+- Comprehensive testing: Unit tests with high code coverage
+- CI/CD pipeline: Automated testing with GitHub Actions
 
 ---
 
-# 🧩 2. Install and Configure Git
+## Installation Instructions
 
-## Install Git
+### Prerequisites
 
-- **MacOS (using Homebrew)**
+- Python 3.10 or higher
+- pip (Python package manager)
+- Git
 
-```bash
-brew install git
-```
-
-- **Windows**
-
-Download and install [Git for Windows](https://git-scm.com/download/win).  
-Accept the default options during installation.
-
-**Verify Git:**
-
-```bash
-git --version
-```
-
----
-
-## Configure Git Globals
-
-Set your name and email so Git tracks your commits properly:
-
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "your_email@example.com"
-```
-
-Confirm the settings:
-
-```bash
-git config --list
-```
-
----
-
-## Generate SSH Keys and Connect to GitHub
-
-> Only do this once per machine.
-
-1. Generate a new SSH key:
-
-```bash
-ssh-keygen -t ed25519 -C "your_email@example.com"
-```
-
-(Press Enter at all prompts.)
-
-2. Start the SSH agent:
-
-```bash
-eval "$(ssh-agent -s)"
-```
-
-3. Add the SSH private key to the agent:
-
-```bash
-ssh-add ~/.ssh/id_ed25519
-```
-
-4. Copy your SSH public key:
-
-- **Mac/Linux:**
-
-```bash
-cat ~/.ssh/id_ed25519.pub | pbcopy
-```
-
-- **Windows (Git Bash):**
-
-```bash
-cat ~/.ssh/id_ed25519.pub | clip
-```
-
-5. Add the key to your GitHub account:
-   - Go to [GitHub SSH Settings](https://github.com/settings/keys)
-   - Click **New SSH Key**, paste the key, save.
-
-6. Test the connection:
-
-```bash
-ssh -T git@github.com
-```
-
-You should see a success message.
-
----
-
-# 🧩 3. Clone the Repository
-
-Now you can safely clone the course project:
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd <repository-directory>
 ```
 
----
+### 2. Create Virtual Environment
 
-# 🛠️ 4. Install Python 3.10+
-
-## Install Python
-
-- **MacOS (Homebrew)**
-
-```bash
-brew install python
-```
-
-- **Windows**
-
-Download and install [Python for Windows](https://www.python.org/downloads/).  
-✅ Make sure you **check the box** `Add Python to PATH` during setup.
-
-**Verify Python:**
-
-```bash
-python3 --version
-```
-or
-```bash
-python --version
-```
-
----
-
-## Create and Activate a Virtual Environment
-
-(Optional but recommended)
+**Mac/Linux:**
 
 ```bash
 python3 -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate.bat  # Windows
+source venv/bin/activate
 ```
 
-### Install Required Packages
+**Windows:**
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
+**Required packages include:**
 
-# 🐳 5. (Optional) Docker Setup
-
-> Skip if Docker isn't used in this module.
-
-## Install Docker
-
-- [Install Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/)
-- [Install Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
-
-## Build Docker Image
-
-```bash
-docker build -t <image-name> .
-```
-
-## Run Docker Container
-
-```bash
-docker run -it --rm <image-name>
-```
+- `pandas` - Data manipulation and CSV handling
+- `python-dotenv` - Environment variable management
+- `colorama` - Colored terminal output
+- `pytest` - Testing framework
+- `pytest-cov` - Test coverage reporting
 
 ---
 
-# 🚀 6. Running the Project
+## Configuration Setup
 
-- **Without Docker**:
+### Creating the .env File
+
+Create a `.env` file in the project root directory with the following environment variables:
+
+```bash
+# .env
+CALCULATOR_LOG_DIR=./logs
+CALCULATOR_HISTORY_DIR=./history
+CALCULATOR_MAX_HISTORY_SIZE=1000
+CALCULATOR_AUTO_SAVE=true
+CALCULATOR_PRECISION=10
+CALCULATOR_MAX_INPUT_VALUE=1e999
+CALCULATOR_DEFAULT_ENCODING=utf-8
+```
+
+### Configuration Options
+
+| Variable                      | Description                      | Default     |
+| ----------------------------- | -------------------------------- | ----------- |
+| `CALCULATOR_LOG_DIR`          | Directory for log files          | `./logs`    |
+| `CALCULATOR_HISTORY_DIR`      | Directory for history files      | `./history` |
+| `CALCULATOR_MAX_HISTORY_SIZE` | Maximum history entries          | `1000`      |
+| `CALCULATOR_AUTO_SAVE`        | Auto-save history on calculation | `true`      |
+| `CALCULATOR_PRECISION`        | Decimal precision                | `10`        |
+| `CALCULATOR_MAX_INPUT_VALUE`  | Maximum allowed input            | `1e999`     |
+| `CALCULATOR_DEFAULT_ENCODING` | File encoding                    | `utf-8`     |
+
+**Note:** The application will create the `logs` and `history` directories automatically if they don't exist.
+
+### Configuring Logging
+
+The logging system is configured automatically based on your `.env` settings:
+
+- **Log Location**: Defined by `CALCULATOR_LOG_DIR`
+- **Log File**: `calculator.log` in the log directory
+- **Log Format**: `%(asctime)s - %(levelname)s - %(message)s`
+- **Log Level**: INFO
+
+All operations, errors, and system events are logged to the configured log file for debugging and auditing purposes.
+
+---
+
+## Usage Guide
+
+### Starting the Calculator
 
 ```bash
 python main.py
 ```
 
-(or update this if the main script is different.)
-
-- **With Docker**:
+or
 
 ```bash
-docker run -it --rm <image-name>
+python -m app.main
+```
+
+### Available Commands
+
+#### Arithmetic Operations
+
+```
+add         - Addition (a + b)
+subtract    - Subtraction (a - b)
+multiply    - Multiplication (a × b)
+divide      - Division (a ÷ b)
+power       - Exponentiation (a ^ b)
+root        - Root calculation (root b of a)
+modulus     - Modulo operation (a % b)
+intdiv      - Integer division (a // b)
+percentage  - Percentage ((a/b) × 100)
+absdiff     - Absolute difference (|a - b|)
+```
+
+#### Session Management
+
+```
+history     - Display calculation history
+clear       - Clear calculation history
+undo        - Undo the last operation
+redo        - Redo the last undone operation
+save        - Save history to CSV file
+load        - Load history from CSV file
+help        - Show all available commands
+exit        - Exit the calculator
+```
+
+### Example Usage Session
+
+```
+Calculator started. Type 'help' for commands.
+
+Enter command: add
+Enter numbers (or 'cancel' to abort):
+First number: 2
+Second number: 3
+Result: 5
+
+Enter command: divide
+Enter numbers (or 'cancel' to abort):
+First number: 10
+Second number: 2
+Result: 5
+
+Enter command: history
+Calculation History:
+  1. Addition(2, 3) = 5
+  2. Division(10, 2) = 5
+
+Enter command: power
+Enter numbers (or 'cancel' to abort):
+First number: 2
+Second number: 8
+Result: 256
+
+Enter command: undo
+Operation undone
+
+Enter command: history
+Calculation History:
+  1. Addition(2, 3) = 5
+  2. Division(10, 2) = 5
+
+Enter command: redo
+Operation redone
+
+Enter command: save
+History saved successfully
+
+Enter command: exit
+History saved successfully.
+Goodbye!
+```
+
+### Canceling Operations
+
+Type `cancel` at any input prompt to abort the current operation:
+
+```
+Enter command: multiply
+Enter numbers (or 'cancel' to abort):
+First number: cancel
+Operation cancelled
 ```
 
 ---
 
-# 📝 7. Submission Instructions
+## Testing Instructions
 
-After finishing your work:
+### Running All Tests
 
 ```bash
-git add .
-git commit -m "Complete Module X"
-git push origin main
+pytest
 ```
 
-Then submit the GitHub repository link as instructed.
+### Running Tests with Coverage
+
+```bash
+pytest --cov=app --cov-report=term-missing
+```
+
+### Running Specific Test Files
+
+```bash
+# Test calculator functionality
+pytest tests/test_calculator.py
+
+# Test REPL interface
+pytest tests/test_calculator_repl.py
+
+# Test operations
+pytest tests/test_operations.py
+
+# Test configuration
+pytest tests/test_calculator_config.py
+```
+
+### Running Tests with Verbose Output
+
+```bash
+pytest -v
+```
+
+### Checking Test Coverage
+
+Generate an HTML coverage report:
+
+```bash
+pytest --cov=app --cov-report=html
+```
+
+Then open `htmlcov/index.html` in your browser.
+
+### Expected Coverage
+
+The project aims for 100% test coverage across all modules:
+
+- `calculation.py` - 100%
+- `calculator.py` - 88%+
+- `calculator_repl.py` - 100%
+- `calculator_config.py` - 88%+
+- `operations.py` - 79%+
 
 ---
 
-# 🔥 Useful Commands Cheat Sheet
+## CI/CD Information
 
-| Action                         | Command                                          |
-| ------------------------------- | ------------------------------------------------ |
-| Install Homebrew (Mac)          | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
-| Install Git                     | `brew install git` or Git for Windows installer |
-| Configure Git Global Username  | `git config --global user.name "Your Name"`      |
-| Configure Git Global Email     | `git config --global user.email "you@example.com"` |
-| Clone Repository                | `git clone <repo-url>`                          |
-| Create Virtual Environment     | `python3 -m venv venv`                           |
-| Activate Virtual Environment   | `source venv/bin/activate` / `venv\Scripts\activate.bat` |
-| Install Python Packages        | `pip install -r requirements.txt`               |
-| Build Docker Image              | `docker build -t <image-name> .`                |
-| Run Docker Container            | `docker run -it --rm <image-name>`               |
-| Push Code to GitHub             | `git add . && git commit -m "message" && git push` |
+### GitHub Actions Workflow
+
+The project uses GitHub Actions for continuous integration and deployment.
+
+**Workflow File:** `.github/workflows/python-app.yml`
+
+**Automated Steps:**
+
+1. Code Checkout - Fetches the latest code
+2. Python Setup - Configures Python 3.10 environment
+3. Dependency Installation - Installs all required packages
+4. Testing - Executes all unit tests
+5. Coverage Report - Generates test coverage statistics
+
+**Trigger Events:**
+
+- Push to `main` branch
+- Pull requests to `main` branch
+- Manual workflow dispatch
+
+**Status Badge:**
+
+```markdown
+![Tests](https://github.com/<username>/<repo>/workflows/Python%20application/badge.svg)
+```
+
+### Running CI/CD Locally
+
+Simulate the CI/CD pipeline on your local machine:
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run linting
+pylint app/
+
+# Run tests with coverage
+pytest --cov=app --cov-report=term-missing
+```
 
 ---
 
-# 📋 Notes
+## Project Structure
 
-- Install **Homebrew** first on Mac.
-- Install and configure **Git** and **SSH** before cloning.
-- Use **Python 3.10+** and **virtual environments** for Python projects.
-- **Docker** is optional depending on the project.
+```
+calculator-project/
+├── app/
+│   ├── __init__.py
+│   ├── calculation.py          # Calculation model
+│   ├── calculator.py            # Main calculator class
+│   ├── calculator_config.py    # Configuration management
+│   ├── calculator_memento.py   # Memento pattern for undo/redo
+│   ├── calculator_repl.py      # Command-line interface
+│   ├── exceptions.py            # Custom exceptions
+│   ├── history.py               # Observer pattern implementation
+│   ├── input_validators.py     # Input validation
+│   ├── operations.py            # Operation classes (Factory pattern)
+│   └── main.py                  # Application entry point
+├── tests/
+│   ├── __init__.py
+│   ├── test_calculation.py
+│   ├── test_calculator.py
+│   ├── test_calculator_config.py
+│   ├── test_calculator_repl.py
+│   └── test_operations.py
+├── .env                         # Environment variables (create this)
+├── .gitignore
+├── requirements.txt
+├── README.md
+└── main.py
+```
 
 ---
 
-# 📎 Quick Links
+## Design Patterns Used
 
-- [Homebrew](https://brew.sh/)
-- [Git Downloads](https://git-scm.com/downloads)
-- [Python Downloads](https://www.python.org/downloads/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [GitHub SSH Setup Guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+### Factory Pattern (operations.py)
+
+Creates operation objects dynamically based on user input. Simplifies adding new operations.
+
+### Strategy Pattern (operations.py)
+
+Allows switching between different calculation strategies. Each operation is a separate strategy.
+
+### Observer Pattern (history.py)
+
+Implements logging and auto-save functionality. Observers are notified when calculations occur.
+
+### Memento Pattern (calculator_memento.py)
+
+Implements undo/redo functionality. Stores and restores calculator state.
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue: ModuleNotFoundError: No module named 'colorama'**
+
+```bash
+pip install colorama
+```
+
+**Issue: Tests failing due to file paths**
+
+```bash
+# Run tests from the project root directory
+cd /path/to/project
+pytest
+```
+
+**Issue: Colorama colors not showing on Windows**
+
+```bash
+# Run in Windows Terminal or update Command Prompt
+# Or disable colors in the code temporarily
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+---
+
+## Acknowledgments
+
+- Design patterns inspired by Gang of Four
+- Testing framework: pytest
+- CI/CD: GitHub Actions
+- Color output: Colorama library
