@@ -16,16 +16,16 @@ class TestShowHelp:
     show_help() function in the calculator_repl project"""
 
   @pytest.mark.parametrize("expected_line", [
-        "add,",          
-        "subtract,",
-        "multiply,",
-        "divide",
-        "power",
-        "root",
-        "modulus",
-        "intdiv",
-        "percentage",
-        "absdiff",
+        "add --",          
+        "subtract --",
+        "multiply --",
+        "divide --",
+        "power --",
+        "root --",
+        "modulus --",
+        "intdiv --",
+        "percentage --",
+        "absdiff --",
         "history - Show calculation history",
         "clear - Clear calculation history",
         "exit - Exit the calculator"
